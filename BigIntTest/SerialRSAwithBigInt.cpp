@@ -1,31 +1,29 @@
-﻿// This is the serial implementation of RSA, it randomly generates two primes and the relevant keys then asks the user to input the string they want encrypted and decrypted.
-//
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "BigInt.h"
 #include <iostream>
 #include <string>
-#include <time.h> 
+#include <time.h>
 
-const int PRIME_LENGTH = 40;
+const int PRIME_LENGTH = 20;
 const int COPRIME = 65537;
+
 // Creates a random number, not my class, inherited from BigInt
 BigInt MakeRandom(BigInt &number, unsigned long int digitCount)
 {
 	srand(time(NULL));
-	//the new number will be created using a string object (newNum), 
-	//and later converted into a BigInt
+
+	// The new number will be created using a string object and later converted into a BigInt
 	std::string newNum;
 	newNum.resize(digitCount);
+
 	unsigned long int tempDigitCount(0);
 
-	//generate random digits
+	// Generate random digits
 	while (tempDigitCount < digitCount)
 	{
 		unsigned long int newRand(std::rand());
 
-		//10 is chosen to skip the first digit, because it might be 
-		//statistically <= n, where n is the first digit of RAND_MAX
+		// 10 is chosen to skip the first digit, because it might be statistically <= n, where n is the first digit of RAND_MAX
 		while (newRand >= 10)
 		{
 			newNum[tempDigitCount++] = (newRand % 10) + '0';
@@ -35,26 +33,29 @@ BigInt MakeRandom(BigInt &number, unsigned long int digitCount)
 		}
 	}
 
-	//make sure the leading digit is not zero
+	// Make sure the leading digit is not zero
 	if (newNum[0] == '0')
 		newNum[0] = (std::rand() % 9) + 1 + '0';
 	number = newNum;
 	return number;
 }
+
 // Creates a random number, not my class, inherited from BigInt
 BigInt makeRandom(BigInt &number, const BigInt &top)
 {
-
-	//randomly select the number of digits for the random number
+	// Randomly select the number of digits for the random number
 	unsigned long int newDigitCount = (rand() % top.Length()) + 1;
 	MakeRandom(number, newDigitCount);
-	//make sure number < top
+
+	// Make sure number < top
 	while (number >= top)
 		MakeRandom(number, newDigitCount);
 	return number;
 }
-//A Miller Rabin primality test that checks to see if a number is prime.
-bool isprime(BigInt &n, int z)
+
+// A Miller Rabin primality test that checks to see if a number is prime ,larger value of z increases accuracy of test
+
+bool isPrime(BigInt &n, int z)
 {
 	BigInt d = n - 1;
 	BigInt two = 2;
@@ -64,15 +65,15 @@ bool isprime(BigInt &n, int z)
 	BigInt a;
 	BigInt x;
 	int i = 0;
-	//Generates the largest number than can express d as 2k·d 
+
+	// Generates the largest number than can express d as 2k·d
 	while (remainder.EqualsZero())
 	{
 		m = n / two.GetPower(k);
 		remainder = m % two;
-
 		k++;
 	}
-	// larger value of z increaes accuracy of test
+
 	while (i < z)
 	{
 		i++;
@@ -85,43 +86,39 @@ bool isprime(BigInt &n, int z)
 			x = x.GetPowerMod(two, n);
 			if (x == 1)
 			{
+				// Number is definitely not prime
 				return false;
-				// number is not prime
 			}
 			if (x == d)
 				continue;
 		}
+		// Number is definitely not prime
 		return false;
-		// number is not prime
 	}
 
+	// Number is probably prime
 	return true;
-	//number is probably prime
-
-
 }
+
 // Function that generates the prime number
 BigInt primeGeneration(BigInt prime)
 {
-
-
 	BigInt c;
 
-	// If the number is even generate a new number
-	while (prime % 2 == BigIntZero)
+	// If the number is even make it odd
+	if (prime % 2 == BigIntZero)
 	{
-		prime = MakeRandom(c, PRIME_LENGTH);
-		std::cout << prime << "It's even" << "\n";
+		prime = prime + BigIntOne;
 	}
 
-	bool test = isprime(prime, 40);
+	bool test = isPrime(prime, 40);
 
-	//If the number generated is not prime but odd add two to the number and recheck
+	// If the number generated is not prime but odd add two to the number and recheck
 	while (test == false)
 	{
 		prime = prime + 2;
 		std::cout << prime << "\n";
-		bool test = isprime(prime, 40);
+		bool test = isPrime(prime, 40);
 
 		if (test == true)
 		{
@@ -131,8 +128,7 @@ BigInt primeGeneration(BigInt prime)
 	return prime;
 }
 
-
-// Calculates the  modular multiplicative inverse of e and the totient
+// Calculates the modular multiplicative inverse of e and the totient
 BigInt modMultiInverse(BigInt e, BigInt totient)
 {
 	BigInt b0 = totient, t, q;
@@ -145,12 +141,8 @@ BigInt modMultiInverse(BigInt e, BigInt totient)
 	}
 	if (x1 < BigIntZero) x1 += b0;
 
-
 	return x1;
-
 }
-
-
 
 //Encryption method, uses the coprime and the product of the two keys to encrypt
 BigInt encryption(BigInt encodedmessage, BigInt coprime, BigInt n)
@@ -163,7 +155,6 @@ BigInt encryption(BigInt encodedmessage, BigInt coprime, BigInt n)
 // A more efficient way of decrypting; using the Chinese Remainder Theorem
 BigInt chineseRemainderTheorem(BigInt d, BigInt p, BigInt q, BigInt c, BigInt e, BigInt n)
 {
-
 	BigInt dp = d % (p - 1);
 	BigInt dq = d % (q - 1);
 	BigInt cTwo = modMultiInverse(p, q);
@@ -182,16 +173,19 @@ BigInt chineseRemainderTheorem(BigInt d, BigInt p, BigInt q, BigInt c, BigInt e,
 
 int main()
 {
+	// Used to seed for the MakeRandom function
 	srand(time(NULL));
-	//used to seed for the MakeRandom function
+
 	BigInt i;
 	BigInt p;
 	BigInt q;
 	BigInt n;
 	BigInt d;
-	//coprime is constant and this is a common coprime to use
+
+	// Coprime is constant and this is a common coprime to use
 	BigInt coprime = COPRIME;
 	BigInt totient;
+
 	// Generate the first random number to use in the primeGeneration function
 	BigInt m = MakeRandom(i, PRIME_LENGTH);
 
@@ -202,7 +196,7 @@ int main()
 	time(&keyStart);
 	p = primeGeneration(m);
 
-	// reseed to prevent duplicate primes
+	// Reseed to prevent duplicate primes
 	m = MakeRandom(i, PRIME_LENGTH);
 	std::cout << "first prime number is:" << "\n";
 	std::cout << p << "\n";
@@ -213,7 +207,8 @@ int main()
 	float keyDif = difftime(keyEnd, keyStart);
 	std::cout << "\n";
 	printf("Elasped time for key generation is %.2lf seconds.\n", keyDif);
-	//Generate other figures needed for encryption and decryption
+
+	// Generate other figures needed for encryption and decryption
 	n = p * q;
 	std::cout << n << "\n";
 	totient = (p - 1) * (q - 1);
@@ -232,7 +227,8 @@ int main()
 	std::string* decode = new std::string[plaintext.size()];
 
 	std::cout << "Encoded string is \n";
-	//Encode string to ASCII characters
+
+	// Encode string to ASCII characters
 	for (int i = 0; i < plaintext.size(); i++)
 	{
 		encode[i] = (BigInt)plaintext[i];
@@ -266,7 +262,6 @@ int main()
 	std::cout << "\n";
 	printf("Elasped time for decryption is %.2lf seconds.\n", decryptionDif);
 
-
 	// clean up dymanic arrays created earlier
 	delete[]encode;
 	delete[]encrypted;
@@ -277,4 +272,3 @@ int main()
 	std::cout << "\n";
 	printf("Elasped time for the program is %.2lf seconds.\n", programDif);
 }
-
